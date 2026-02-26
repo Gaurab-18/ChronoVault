@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: chronovault
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./db-init:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: chronovault
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+
+      # Stripe Configuration
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID}
+
+      # Gmail / Email
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
+      EMAIL_FROM: ${EMAIL_FROM}
+
+      # Other
+      ORIGIN: ${ORIGIN}
+    depends_on:
+      - postgres
+    volumes:
+      - ./uploads:/app/uploads
+
+  frontend:
+    build: ./frontend
+    restart: always
+    ports:
+      - "80:80"
+    environment:
+      ORIGIN: ${ORIGIN}
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+
